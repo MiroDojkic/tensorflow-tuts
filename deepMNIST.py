@@ -71,6 +71,17 @@ def get_train_op(cost_function, learning_rate):
     return train_op
 
 
+def fill_feed_dict(data_sets, input_placeholder, labels_placeholder, batch_size):
+    input_feed, labels_feed = data_sets.train.next_batch(batch_size)
+
+    feed_dict = {
+        input_placeholder: input_feed,
+        labels_placeholder: labels_feed
+    }
+
+    return feed_dict
+
+
 def main(_):
     data_sets = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
     sess = tf.InteractiveSession()
@@ -86,12 +97,10 @@ def main(_):
 
     sess.run(tf.initialize_all_variables())
     for i in range(20000):
-        batch = data_sets.train.next_batch(50)
         if i % 100 == 0:
-            train_accuracy = accuracy.eval(feed_dict={
-                x: batch[0], y_: batch[1]})
+            train_accuracy = accuracy.eval(feed_dict=fill_feed_dict(data_sets, x, y_, 50))
             print("step %d, training accuracy %g" % (i, train_accuracy))
-        train_op.run(feed_dict={x: batch[0], y_: batch[1]})
+        train_op.run(feed_dict=fill_feed_dict(data_sets, x, y_, 50))
 
     print("test accuracy %g" % accuracy.eval(feed_dict={
         x: data_sets.test.images, y_: data_sets.test.labels}))
