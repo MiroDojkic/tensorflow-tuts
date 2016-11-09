@@ -91,6 +91,8 @@ def run_training():
         train_op = get_train_op(get_cost_function(y, y_), learning_rate=1e-4)
         correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+        saver = tf.train.Saver()
         with tf.Session() as sess:
             sess.run(tf.initialize_all_variables())
             for i in range(20000):
@@ -101,6 +103,8 @@ def run_training():
 
             print("test accuracy %g" % accuracy.eval(feed_dict={
                 x: data_sets.test.images, y_: data_sets.test.labels}))
+            save_path = saver.save(sess, "/tmp/model.ckpt")
+            print("Model saved in file: %s" % save_path)
 
 
 def main(_):
