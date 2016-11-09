@@ -60,6 +60,17 @@ def infer(x):
     return y_conv
 
 
+def get_cost_function(logits, labels):
+    return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, labels))
+
+
+def get_train_op(cost_function, learning_rate):
+    optimizer = tf.train.AdamOptimizer(learning_rate)
+    global_step = tf.Variable(0, name='global_step', trainable=False)
+    train_op = optimizer.minimize(cost_function, global_step)
+    return train_op
+
+
 def main(_):
     data_sets = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
     sess = tf.InteractiveSession()
@@ -68,10 +79,11 @@ def main(_):
 
     y = infer(x)
 
-    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y, y_))
-    train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+    train_op = get_train_op(get_cost_function(y, y_), learning_rate=1e-4)
+
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
     sess.run(tf.initialize_all_variables())
     for i in range(20000):
         batch = data_sets.train.next_batch(50)
@@ -79,7 +91,7 @@ def main(_):
             train_accuracy = accuracy.eval(feed_dict={
                 x: batch[0], y_: batch[1]})
             print("step %d, training accuracy %g" % (i, train_accuracy))
-        train_step.run(feed_dict={x: batch[0], y_: batch[1]})
+        train_op.run(feed_dict={x: batch[0], y_: batch[1]})
 
     print("test accuracy %g" % accuracy.eval(feed_dict={
         x: data_sets.test.images, y_: data_sets.test.labels}))
