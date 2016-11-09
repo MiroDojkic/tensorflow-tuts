@@ -6,12 +6,18 @@ from tensorflow.examples.tutorials.mnist import input_data
 FLAGS = None
 
 
-def weight_variable(shape):
+def create_input_placeholders(number_of_features, number_of_labels):
+    x = tf.placeholder(dtype=tf.float32, shape=(None, number_of_features))
+    y_ = tf.placeholder(dtype=tf.float32, shape=(None, number_of_labels))
+    return x, y_
+
+
+def generate_weights(shape):
     initial = tf.truncated_normal(shape=shape, stddev=0.1)
     return tf.Variable(initial)
 
 
-def bias_variable(shape):
+def generate_biases(shape):
     initial = tf.constant(value=0.1, shape=shape)
     return tf.Variable(initial)
 
@@ -22,31 +28,29 @@ def conv2d(x, W):
 
 def max_pooling(x):
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
-    
+
 
 def main(_):
-    mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+    data_sets = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
     sess = tf.InteractiveSession()
 
-    x = tf.placeholder(tf.float32, [None, 784])
+    x, y_ = create_input_placeholders(number_of_features=784, number_of_labels=10)
 
-    y_ = tf.placeholder(tf.float32, [None, 10])
-
-    W_conv1 = weight_variable([5, 5, 1, 32])
-    b_conv1 = bias_variable([32])
+    W_conv1 = generate_weights([5, 5, 1, 32])
+    b_conv1 = generate_biases([32])
     x_image = tf.reshape(x, [-1, 28, 28, 1])
 
     h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
     h_pool1 = max_pooling(h_conv1)
 
-    W_conv2 = weight_variable([5, 5, 32, 64])
-    b_conv2 = bias_variable([64])
+    W_conv2 = generate_weights([5, 5, 32, 64])
+    b_conv2 = generate_biases([64])
 
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pooling(h_conv2)
 
-    W_fc1 = weight_variable([7 * 7 * 64, 1024])
-    b_fc1 = bias_variable([1024])
+    W_fc1 = generate_weights([7 * 7 * 64, 1024])
+    b_fc1 = generate_biases([1024])
 
     h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
@@ -54,8 +58,8 @@ def main(_):
     keep_prob = tf.placeholder(tf.float32)
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
-    W_fc2 = weight_variable([1024, 10])
-    b_fc2 = bias_variable([10])
+    W_fc2 = generate_weights([1024, 10])
+    b_fc2 = generate_biases([10])
 
     y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
@@ -65,7 +69,7 @@ def main(_):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     sess.run(tf.initialize_all_variables())
     for i in range(20000):
-        batch = mnist.train.next_batch(50)
+        batch = data_sets.train.next_batch(50)
         if i % 100 == 0:
             train_accuracy = accuracy.eval(feed_dict={
                 x: batch[0], y_: batch[1], keep_prob: 1.0})
@@ -73,7 +77,7 @@ def main(_):
         train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
     print("test accuracy %g" % accuracy.eval(feed_dict={
-        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+        x: data_sets.test.images, y_: data_sets.test.labels, keep_prob: 1.0}))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
