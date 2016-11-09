@@ -82,28 +82,30 @@ def fill_feed_dict(data_sets, input_placeholder, labels_placeholder, batch_size)
     return feed_dict
 
 
-def main(_):
+def run_training():
     data_sets = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
-    sess = tf.InteractiveSession()
 
-    x, y_ = create_input_placeholders(number_of_features=784, number_of_labels=10)
+    with tf.Graph().as_default():
+        x, y_ = create_input_placeholders(number_of_features=784, number_of_labels=10)
+        y = infer(x)
+        train_op = get_train_op(get_cost_function(y, y_), learning_rate=1e-4)
+        correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        with tf.Session() as sess:
+            sess.run(tf.initialize_all_variables())
+            for i in range(20000):
+                if i % 100 == 0:
+                    train_accuracy = accuracy.eval(feed_dict=fill_feed_dict(data_sets, x, y_, 50))
+                    print("step %d, training accuracy %g" % (i, train_accuracy))
+                train_op.run(feed_dict=fill_feed_dict(data_sets, x, y_, 50))
 
-    y = infer(x)
+            print("test accuracy %g" % accuracy.eval(feed_dict={
+                x: data_sets.test.images, y_: data_sets.test.labels}))
 
-    train_op = get_train_op(get_cost_function(y, y_), learning_rate=1e-4)
 
-    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+def main(_):
+    run_training()
 
-    sess.run(tf.initialize_all_variables())
-    for i in range(20000):
-        if i % 100 == 0:
-            train_accuracy = accuracy.eval(feed_dict=fill_feed_dict(data_sets, x, y_, 50))
-            print("step %d, training accuracy %g" % (i, train_accuracy))
-        train_op.run(feed_dict=fill_feed_dict(data_sets, x, y_, 50))
-
-    print("test accuracy %g" % accuracy.eval(feed_dict={
-        x: data_sets.test.images, y_: data_sets.test.labels}))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
