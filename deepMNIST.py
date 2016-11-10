@@ -7,30 +7,58 @@ FLAGS = None
 
 
 def create_input_placeholders(number_of_features, number_of_labels):
+    """
+    Creates and returnes tf placeholders from input data:
+    x for feature values, y_ for correct classification labels
+    """
+
     x = tf.placeholder(dtype=tf.float32, shape=(None, number_of_features))
     y_ = tf.placeholder(dtype=tf.float32, shape=(None, number_of_labels))
     return x, y_
 
 
 def generate_weights(shape):
+    """
+    Creates tf variable with random values which serves as neural network weight
+    """
+
     initial = tf.truncated_normal(shape=shape, stddev=0.1)
     return tf.Variable(initial)
 
 
 def generate_biases(shape):
+    """
+    Creates tf variable with constant values of 1 which serves as neural network bias
+    """
+
     initial = tf.constant(value=0.1, shape=shape)
     return tf.Variable(initial)
 
 
 def conv2d(x, W):
+    """
+    Computes 2-D convolution given input feature values and weights
+    with hardcoded size of strides
+    """
+
     return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 
 def max_pooling(x):
+    """
+    Given input feature values with hardcoded size of strides
+    performs max pooling and returns max pooled tensor
+    """
+
     return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
 
 def infer(x):
+    """
+    Creates a graph representing convolutional neural network with 2 hidden layers
+    and max pooling, softmax layer on top. Returns operation to compute output layer logits.
+    """
+
     W_conv1 = generate_weights([5, 5, 1, 32])
     b_conv1 = generate_biases([32])
     x_image = tf.reshape(x, [-1, 28, 28, 1])
@@ -61,10 +89,20 @@ def infer(x):
 
 
 def get_cost_function(logits, labels):
+    """
+    Returns cross entropy based cost function as tf operation given computed logits
+    and correct prediction labels from data set
+    """
+
     return tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, labels))
 
 
 def get_train_op(cost_function, learning_rate):
+    """
+    Given cost function and learning rate, returns train tf operation
+    which minimizes the cost using AdamOptimizer
+    """
+
     optimizer = tf.train.AdamOptimizer(learning_rate)
     global_step = tf.Variable(0, name='global_step', trainable=False)
     train_op = optimizer.minimize(cost_function, global_step)
@@ -83,6 +121,11 @@ def fill_feed_dict(data_sets, input_placeholder, labels_placeholder, batch_size)
 
 
 def run_training():
+    """
+    Builds graph and runs training using given data set.
+    Prints out accuracy during training and saves tf variable values after performing training.
+    """
+
     data_sets = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
 
     with tf.Graph().as_default():
